@@ -110,18 +110,19 @@ start_process (void *file_name_)
    does nothing. */
 int
 process_wait (tid_t child_tid UNUSED) 
-{
+{ 
+  // ZIYI CHEN
+  struct thread *cur = thread_current();
+  if (list_empty (&cur->child_list)) return ERROR;
+  
   struct child_process* cp = get_child_process(child_tid);
   if (!cp || cp->wait)
     {
       printf("child proc not found\n");
       return ERROR;
     }
-    cp->wait = true;
-  while (!cp->exit) // busy loop (needs to be removed)
-    {
-      timer_sleep(1000);
-    }
+    // cp->wait = true;
+  sema_down (&cp->sys_wait_sema);
   int status = cp->status;
   remove_child_process(cp);
   return status;
@@ -138,14 +139,12 @@ process_exit (void)
   remove_child_processes();
 
   // Will exit if killed by the kernel
-  if (thread_alive(cur->parent))
-    {
-      cur->cp->exit = true;
-    }
+  //if (thread_alive(cur->parent))
+    //{
+     // cur->cp->exit = true;
+    //}
   // set proc exit to true
-  //  struct child_process *cp = get_child_process(cur->parent->pid);
-  cur->cp->exit = true;
-
+  sema_up (&cur->cp->sys_wait_sema);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

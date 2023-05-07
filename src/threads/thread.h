@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -96,6 +97,7 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+    
 #endif
     
     // Needed for wait / exec sys calls
@@ -110,6 +112,8 @@ struct thread
     
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+    
+    
   };
 
 /* If false (default), use round-robin scheduler.

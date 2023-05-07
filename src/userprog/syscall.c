@@ -77,7 +77,7 @@ syscall_handler (struct intr_frame *f ) // UNUSED)
   check_buffer_ptr(f->esp,4); // for sc reads over page boundary
 
   int call_num = *(int *)(f->esp);
-  //printf ("system call nr: %d\n",call_num);
+  // printf ("system call nr: %d\n",call_num);
   
  switch (call_num) {
 
@@ -148,6 +148,12 @@ syscall_handler (struct intr_frame *f ) // UNUSED)
      int fid = (int)(s_args[0]);
      s_close(fid);
      break;
+     
+   case SYS_WAIT:
+     get_args(f->esp,(void **)&s_args,1);
+     tid_t child_tid = (tid_t)(s_args[0]);
+     f->eax = s_wait(child_tid);
+     break;
     
  default:
     printf("Sys call is unknown!!\n");
@@ -172,6 +178,14 @@ void get_args(void *sp, void **args,int n) {
     args[i] = (void *) *p;//(sp + (i+1) * wlen);
     //printf("Args %d: %x\n",i,*(int*)args[i]);
   }
+}
+
+int s_wait (tid_t child_tid) {
+  int status = process_wait (child_tid);
+  //if (status == -1) {
+    // printf ("Something went wrong\n");
+  //}
+  return status;
 }
 
 void s_halt () {
@@ -226,14 +240,12 @@ s_exec(char *cmdline) {
 void s_exit (int status) {
   struct thread *curthread = thread_current();
 
-  /*if (thread_alive(curthread->parent))
-    {
-      curthread->cp->status = status; // set up child status for later
-      }
-  */
+  if (thread_alive(curthread->parent))
+  {
+     curthread->cp->status = status; // set up child status for later
+  }
   printf ("%s: exit(%d)\n",curthread->name,status);
   if (lock_held_by_current_thread(&file_lock)) lock_release(&file_lock);
-  
   thread_exit();
 }
 
@@ -485,7 +497,8 @@ struct child_process* add_child_process (int pid)
   cp->load = NOT_LOADED;
   cp->wait = false;
   cp->exit = false;
-  //lock_init(&cp->wait_lock);
+  cp->status = -1; // ZIYI CHEN
+  sema_init (&cp->sys_wait_sema, 0);
   list_push_back(&thread_current()->child_list,&cp->elem);
   return cp;
 }

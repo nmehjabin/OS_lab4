@@ -25,8 +25,10 @@ struct child_process {
   bool wait;
   bool exit;
   int status;
-  struct lock wait_lock;
   struct list_elem elem;
+  
+  /* Ziyi Chen / semaphore for sys_wait */
+  struct semaphore sys_wait_sema;
 };
 
 // Represent file within a process (kept in list) via fid
